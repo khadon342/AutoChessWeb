@@ -285,7 +285,7 @@
 
             <div data-ui-tip="round" class="px-2.5 py-1 rounded-lg bg-[#0d1320] border border-[#c89b3c]/45 flex items-center gap-1.5 text-[11px] sm:text-xs font-extrabold cursor-help shrink-0 shadow-inner">
                 <span class="text-[#c89b3c]">🚩 Vòng</span>
-                <span id="hud-round" class="text-[#f0e6d2] font-black">1 / 40</span>
+                <span id="hud-round" class="text-[#f0e6d2] font-black">1 / 50</span>
                 <span id="hud-phase" class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">CHUẨN BỊ</span>
             </div>
 
@@ -519,7 +519,7 @@
             <div class="space-y-2 bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
                 <div class="text-xs font-black text-amber-300 uppercase">Chế Độ Chơi</div>
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="mode-standard" class="px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-500/20 text-xs font-black text-white cursor-pointer">🏆 Tiêu Chuẩn (40 Vòng)</button>
+                    <button type="button" id="mode-standard" class="px-3 py-2 rounded-xl border-2 border-amber-400 bg-amber-500/20 text-xs font-black text-white cursor-pointer">🏆 Tiêu Chuẩn (50 Vòng)</button>
                     <button type="button" id="mode-endless" class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300 cursor-pointer">♾️ Vô Tận</button>
                 </div>
 
@@ -924,10 +924,12 @@ Object.assign(SoundFX, {
         const c = this.ctx;
         if (!this._bus) {
             const comp = c.createDynamicsCompressor();
-            comp.threshold.value = -15; comp.knee.value = 20; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.22;
-            const master = c.createGain(); master.gain.value = 1.35;
-            const soft = c.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 7500; soft.Q.value = 0.5;
-            comp.connect(master); master.connect(soft); soft.connect(c.destination);
+            comp.threshold.value = -26; comp.knee.value = 14; comp.ratio.value = 5; comp.attack.value = 0.002; comp.release.value = 0.12;   // nén mạnh hơn: tiếng nhỏ không bị tiếng to nuốt
+            const master = c.createGain(); master.gain.value = 2.1;
+            const pres = c.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2800; pres.Q.value = 0.8; pres.gain.value = 4;   // nâng dải trung-cao cho rõ tiếng
+            const soft = c.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 12000; soft.Q.value = 0.5;
+            const lim = c.createDynamicsCompressor(); lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.001; lim.release.value = 0.08;   // limiter chống vỡ tiếng
+            comp.connect(master); master.connect(pres); pres.connect(soft); soft.connect(lim); lim.connect(c.destination);
             const conv = c.createConvolver(); conv.buffer = this._impulse();
             const rg = c.createGain(); rg.gain.value = 0.7; conv.connect(rg); rg.connect(comp);
             this._bus = comp; this._rev = conv;
@@ -1313,7 +1315,7 @@ Object.assign(SoundFX, {
     // ===== Viễn Chinh: súng laser công nghệ (tổng hợp WebAudio) =====
     vcShot(bx) {
         const p = (bx - 4.5) / 5; if (!this._gate('vcShot', 0.06)) return;
-        if (this._ready()) { this.P(['vcA1', 'vcA2', 'vcA3'], 0.9, 0, { pan: p, wet: 0.15, lp: 14000 }); return; }
+        if (this._ready()) { this.P(['vcA1', 'vcA2', 'vcA3'], 1.5, 0, { pan: p, wet: 0.15, lp: 14000 }); return; }
         this.sweep(2400, 380, 'sawtooth', 0.16, 0.2, p, 0, 0.002, 0.2);
         this.sweep(1200, 180, 'square', 0.1, 0.1, p, 0.01, 0.002, 0.1);
         this.noise(0.08, { type: 'highpass', f0: 3500, gain: 0.25, pan: p, wet: 0.3 });
@@ -1322,7 +1324,7 @@ Object.assign(SoundFX, {
     },
     vcAim(bx, dur = 2.0) {   // sạc năng lượng: tiếng rít dâng dần + tiếng khóa mục tiêu
         const p = (bx - 4.5) / 5;
-        if (this._ready()) { this.P('vcAimS', 0.8, 0, { pan: p, wet: 0.2, lp: 14000, dur: Math.min(2.1, Math.max(0.1, dur)) }); return; }
+        if (this._ready()) { this.P('vcAimS', 1.3, 0, { pan: p, wet: 0.2, lp: 14000, dur: Math.min(2.1, Math.max(0.1, dur)) }); return; }
         this.sweep(140, 1500, 'sawtooth', dur * 0.95, 0.06, p, 0, 0.3, 0.15);
         this.sweep(300, 3000, 'sine', dur * 0.95, 0.05, p, 0.1, 0.3, 0.2);
         for (let i = 0; i < 7; i++) this.sweep(2200 + i * 160, 2200 + i * 160, 'square', 0.04, 0.035, p, 0.5 + i * (dur - 0.7) / 7 * 1.0, 0.002, 0.05);
@@ -1330,7 +1332,7 @@ Object.assign(SoundFX, {
     },
     vcFire(bx) {   // phát bắn xuyên: nổ siêu thanh + vọng
         const p = (bx - 4.5) / 5;
-        if (this._ready()) { this.P('vcFireS', 1.0, 0, { pan: p, wet: 0.25, lp: 14000 }); return; }
+        if (this._ready()) { this.P('vcFireS', 2.4, 0, { pan: p, wet: 0.25, lp: 14000 }); return; }
         this.noise(0.18, { type: 'highpass', f0: 2200, gain: 0.5, pan: p, wet: 0.4 });
         this.sweep(3200, 70, 'sawtooth', 0.5, 0.4, p, 0, 0.002, 0.35);
         this.sweep(1600, 90, 'square', 0.35, 0.2, p, 0, 0.002, 0.3);
@@ -1582,7 +1584,7 @@ const TRAITS = {
 const CLASSES = {
     warrior: {
         id: 'warrior', name: 'Võ Sư', cost: 1, icon: '🥋', color: '#10b981', secondary: '#34d399',
-        hp: 680, dmg: 48, ap: 1.0, as: 0.75, range: 1.25, armor: 30, mr: 28, mana: 20, maxMana: 60,
+        hp: 680, dmg: 72, ap: 1.0, as: 0.75, range: 1.25, armor: 30, mr: 28, mana: 20, maxMana: 60,
         critChance: 0.25, critDmg: 1.45, traits: ['brawler', 'celestial'],
         scaleText: 'Liên Hoàn Quyền (60 Mana): Đấm 2 cú (115%/135%/160% SMCK) và hồi 60/95/145 (+45% SMCK) Máu.'
     },
@@ -1594,7 +1596,7 @@ const CLASSES = {
     },
     rogue: {
         id: 'rogue', name: 'Đạo Tặc', cost: 1, icon: '🗡️', color: '#64748b', secondary: '#94a3b8',
-        hp: 640, dmg: 62, ap: 1.0, as: 0.85, range: 1.25, armor: 26, mr: 24, mana: 15, maxMana: 50,
+        hp: 640, dmg: 93, ap: 1.0, as: 0.85, range: 1.25, armor: 26, mr: 24, mana: 15, maxMana: 50,
         critChance: 0.30, critDmg: 1.5, traits: ['assassin', 'shadow'],
         scaleText: 'Nội tại: mỗi kẻ địch bị Đạo Tặc kết liễu (last hit) giúp tích vĩnh viễn +15 SMCK. Đâm Lén (55 Mana): Đâm chí mạng gây 140%/170%/205% SMCK kèm 35/60/95 (+30% SMCK) ST Chuẩn, cộng thêm 6/8/10% Máu đã mất của mục tiêu (ST Chuẩn).'
     },
@@ -1606,7 +1608,7 @@ const CLASSES = {
     },
     acolyte: {
         id: 'acolyte', name: 'Tu Sĩ', cost: 1, icon: '✝️', color: '#eab308', secondary: '#fef08a',
-        hp: 560, dmg: 38, ap: 1.0, as: 0.68, range: 3.8, armor: 22, mr: 26, mana: 30, maxMana: 70,
+        hp: 560, dmg: 57, ap: 1.0, as: 0.68, range: 3.8, armor: 22, mr: 26, mana: 30, maxMana: 70,
         critChance: 0.25, critDmg: 1.4, traits: ['mystic', 'celestial'],
         scaleText: 'Nội tại: Đầu trận ban cho đồng minh nhiều máu nhất Giáp ảo 250/350/500 (+150, +150% SMPT), đòn đánh thường gây ST phép. Chiêu (70 Mana): Hồi máu & gây ST.'
     },
@@ -1732,7 +1734,8 @@ const COST_HEX = { 1: '#94a3b8', 2: '#34d399', 3: '#38bdf8', 4: '#c084fc', 5: '#
 
 // ===== CÂN BẰNG v4: chỉ số + mô tả có thông số rõ ràng (ghi đè CLASSES) =====
 Object.assign(CLASSES.warrior,  { hp: 720, dmg: 50 });
-Object.assign(CLASSES.vanguard, { hp: 720 });
+Object.assign(CLASSES.vanguard, { hp: 1150, dmg: 64, armor: 62, mr: 54, as: 0.72, maxMana: 60, mana: 30,
+    scaleText: 'Nội tại: Đầu trận, buff cho 1 đồng minh lân cận 28/50/80 Song giáp và tự nhận 40% lượng đó dưới dạng Giáp ảo. Chiêu (60 Mana): Đập khiên gây 190/290/460 (+160% Giáp) ST phép và làm choáng 1.6s.' });
 Object.assign(CLASSES.rogue,    { dmg: 50, critChance: 0.25 });
 Object.assign(CLASSES.archer,   { hp: 560 });
 Object.assign(CLASSES.mage,     { hp: 640, maxMana: 70,
@@ -1804,7 +1807,7 @@ CLASSES.vienchinh = {
     id: 'vienchinh', name: 'Viễn Chinh', cost: 3, icon: '🛰️', color: '#22d3ee', secondary: '#a78bfa',
     hp: 640, dmg: 68, starDmg: [1, 2.1, 3.9], ap: 1.0, as: 0.55, range: 7, armor: 22, mr: 22, mana: 20, maxMana: 75,
     critChance: 0, critDmg: 1.0, traits: ['archer', 'imperial'],
-    scaleText: 'Nội tại Đạn Xuyên Giáp: bắn chậm, KHÔNG thể chí mạng nhưng tầm đánh cực xa (7 ô), mỗi đòn gây 200% SMCK và tích 10/15/20% Xuyên Giáp (tối đa 3 lần). Khóa Mục Tiêu (75 Mana): vào tư thế ngắm, chiếu tia laser lên kẻ địch XA NHẤT trong 2 giây rồi bắn một viên đạn xuyên thẳng gây 440/660/880 + 165% SMCK lên mục tiêu bị ngắm và 60% lên mọi kẻ địch trên đường đạn.'
+    scaleText: 'Nội tại Chuyển Hóa: mỗi 1% Tỉ lệ chí mạng và mỗi 1% Sát thương chí mạng (phần vượt 100%) nhận được đổi thành +5 SMCK. Nội tại Đạn Xuyên Giáp: bắn chậm, KHÔNG thể chí mạng nhưng tầm đánh cực xa (7 ô), mỗi đòn gây 200% SMCK và tích 6/9/12% Xuyên Giáp (tối đa 3 lần). Khóa Mục Tiêu (75 Mana): vào tư thế ngắm, chiếu tia laser lên kẻ địch XA NHẤT trong 2 giây rồi bắn một viên đạn xuyên thẳng gây 560/840/1120 + 200% SMCK lên mục tiêu bị ngắm và 60% lên mọi kẻ địch trên đường đạn.'
 };
 
 // ===== v6.40: TĂNG TẦM ĐÁNH cho tướng đánh xa (đứng ở khoảng cách an toàn bắn từ xa) =====
@@ -1865,6 +1868,7 @@ const SKILL_NAMES = {
 const POOL_CHAMPIONS = Object.keys(CLASSES).filter(k => !CLASSES[k].isSummon);
 
 const ITEMS = {
+    forge: { id: 'forge', name: 'Lò Rèn', icon: '🔥', type: 'tool', desc: 'Dụng cụ dùng 1 lần: kéo thả (hoặc chọn rồi bấm) lên một trang bị trong kho đồ hoặc lên tướng đang cầm đồ để ĐỔI trang bị đó thành một trang bị CÙNG CẤP (đồ thường ↔ đồ thường, đồ hoàn chỉnh ↔ đồ hoàn chỉnh) ngẫu nhiên. Chỉ rơi ra ở 4 vòng ngẫu nhiên mỗi ván. Chỉ dùng được khi chuẩn bị.', stats: {} },
     shovel: { id: 'shovel', name: 'Xẻng', icon: '🪏', type: 'tool', desc: 'Dụng cụ dùng 1 lần: kéo thả (hoặc chọn rồi bấm) lên một tướng của bạn để gỡ TOÀN BỘ trang bị của tướng đó và trả về kho đồ. Chỉ dùng được khi chuẩn bị.', stats: {} },
     sword: { id: 'sword', name: 'Kiếm B.F.', icon: '🗡️', type: 'component', desc: '+15 SMCK', stats: { dmg: 15 } },
     bow: { id: 'bow', name: 'Cung Gỗ', icon: '🏹', type: 'component', desc: '+15% Tốc đánh', stats: { asPct: 0.15 } },
@@ -2002,7 +2006,7 @@ const AUGMENTS = [
 // ============================================================================
 const state = {
     round: 1,
-    maxRounds: 40,
+    maxRounds: 50,
     mode: 'standard',
     difficulty: 'normal',
     adaptive: true,
@@ -2396,6 +2400,7 @@ function applyStatsToUnit(u, activeTraitsMap, augList) {
         u.mana = Math.min(u.maxMana, startMana);
         u.shield = startShield;
     }
+    if (def.id === 'vienchinh') dmg += (Math.min(1, critChance) * 100 + (critDmg - 1) * 100) * 5;   // Viễn Chinh: mỗi 1% tỉ lệ chí mạng & 1% ST chí mạng => +5 SMCK
     u.dmg = Math.round(dmg);
     u.ap = Number(ap.toFixed(2));
     u.as = Number((def.as * (1 + asPct)).toFixed(2));
@@ -2436,12 +2441,68 @@ function useShovelOnUnit(invIdx, u) {
     return true;
 }
 
+
+// ===== LÒ RÈN: đổi trang bị thành trang bị cùng cấp ngẫu nhiên (rơi ở 4 vòng ngẫu nhiên mỗi ván) =====
+function pickForgeRounds(maxRounds) {
+    const hi = Math.min(maxRounds, 50) - 1, pool = [];
+    for (let r = 4; r <= hi; r++) pool.push(r);
+    const out = [];
+    while (out.length < 4 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    return out.sort((a, b) => a - b);
+}
+function rerollSameTier(itemId) {
+    const it = ITEMS[itemId]; if (!it) return null;
+    const pool = Object.values(ITEMS).filter(x => x.type === it.type && x.id !== itemId).map(x => x.id);
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+}
+function forgeFx(msg) { SoundFX.playEquip(); showToast(msg, 'success'); }
+function useForgeOnInventory(forgeIdx, targetIdx) {
+    const tid = state.inventory[targetIdx];
+    if (state.phase !== 'prep') { showToast('Chỉ dùng Lò Rèn khi chuẩn bị!', 'warning'); return false; }
+    if (!tid || !ITEMS[tid] || (ITEMS[tid].type !== 'component' && ITEMS[tid].type !== 'completed')) { showToast('Lò Rèn chỉ đổi được đồ thường hoặc đồ hoàn chỉnh!', 'warning'); return false; }
+    const nid = rerollSameTier(tid); if (!nid) return false;
+    state.inventory[targetIdx] = nid;
+    state.inventory.splice(forgeIdx, 1);
+    state.selectedInvIdx = -1;
+    renderInventory();
+    forgeFx(`🔥 Lò Rèn: ${ITEMS[tid].icon} ${ITEMS[tid].name} → ${ITEMS[nid].icon} ${ITEMS[nid].name}`);
+    return true;
+}
+function useForgeOnUnit(forgeIdx, u) {
+    if (state.phase !== 'prep') { showToast('Chỉ dùng Lò Rèn khi chuẩn bị!', 'warning'); return false; }
+    const owned = (u.items || []).filter(id => ITEMS[id]);
+    if (!owned.length) { showToast('Tướng này chưa cầm trang bị nào để rèn lại!', 'warning'); return false; }
+    const apply = (slot) => {
+        const old = u.items[slot], nid = rerollSameTier(old); if (!nid) return;
+        u.items[slot] = nid;
+        const fi = state.inventory.indexOf('forge'); if (fi >= 0) state.inventory.splice(fi, 1);
+        state.selectedInvIdx = -1;
+        refreshAllPlayerStats(); renderInventory(); renderBench();
+        spawnEffect('starUp', u.x, u.y, '#fb923c', 1.0, 0.4);
+        spawnFloatingText(u.x, u.y - 0.7, `🔥 ${ITEMS[nid].name}`, '#fb923c', 13);
+        forgeFx(`🔥 Lò Rèn: ${ITEMS[old].icon} ${ITEMS[old].name} → ${ITEMS[nid].icon} ${ITEMS[nid].name} (${CLASSES[u.def].name})`);
+    };
+    if (owned.length === 1) { apply(u.items.findIndex(id => ITEMS[id])); return true; }
+    // nhiều món: hiện bảng chọn món cần rèn lại
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.85);';
+    ov.innerHTML = `<div style="background:#0f172a;border:2px solid #fb923c;border-radius:16px;padding:16px;max-width:420px;width:92%;text-align:center;color:#fff;font-family:inherit;">
+        <div style="font-weight:900;font-size:16px;margin-bottom:4px;">🔥 Lò Rèn</div>
+        <div style="font-size:12px;color:#fdba74;margin-bottom:10px;">Chọn trang bị của ${CLASSES[u.def].name} để đổi thành món cùng cấp ngẫu nhiên</div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${u.items.map((id, i) => ITEMS[id] ? `<button data-fs="${i}" style="padding:8px 10px;border-radius:12px;background:#1e293b;border:1px solid #fb923c;color:#fff;cursor:pointer;min-width:90px;"><div style="font-size:26px">${ITEMS[id].icon}</div><div style="font-size:11px;font-weight:800">${ITEMS[id].name}</div></button>` : '').join('')}</div>
+        <button data-fs="x" style="margin-top:12px;padding:6px 14px;border-radius:10px;background:#334155;color:#cbd5e1;border:none;cursor:pointer;font-size:12px;">Hủy</button></div>`;
+    ov.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { const v = b.getAttribute('data-fs'); ov.remove(); if (v !== 'x') apply(Number(v)); });
+    document.body.appendChild(ov);
+    return true;
+}
+
 function equipItemToUnit(invIdx, u) {
     const itemId = state.inventory[invIdx];
     if (!itemId || !u) return false;
     const item = ITEMS[itemId];
     if (!item) return false;
     if (itemId === 'shovel') return useShovelOnUnit(invIdx, u);
+    if (itemId === 'forge') return useForgeOnUnit(invIdx, u);
 
     if (item.type === 'component') {
         const compIdx = (u.items || []).findIndex(id => ITEMS[id]?.type === 'component');
@@ -2484,6 +2545,8 @@ function combineInventoryItems(idx1, idx2) {
     if (idx1 === idx2 || idx1 < 0 || idx2 < 0) return false;
     const a = state.inventory[idx1];
     const b = state.inventory[idx2];
+    if (a === 'forge' && b !== 'forge') return useForgeOnInventory(idx1, idx2);
+    if (b === 'forge' && a !== 'forge') return useForgeOnInventory(idx2, idx1);
     const crafted = getRecipeResult(a, b);
     if (!crafted) return false;
 
@@ -2777,7 +2840,7 @@ function generateEnemyWave(round) {
         else if (state.streak < 0) adapt -= 0.025 * Math.min(5, -state.streak);
         if (state.hp < 40) adapt -= 0.03;
     }
-    const ramp = 0.80 + 0.55 * Math.min(1, (round - 1) / 39);   // tăng tuyến tính, đều từng vòng: x0.80 (vòng 1) -> x1.35 (vòng 40)
+    const ramp = 0.80 + 0.55 * Math.min(1, (round - 1) / 49);   // tăng tuyến tính, đều từng vòng: x0.80 (vòng 1) -> x1.35 (vòng 50)
     const diffMult = DF.mult * ramp * adapt;
     const count = Math.max(1, Math.min(10, Math.round(1.2 + round * 0.22 + getBoardCap() * 0.25) + DF.extraUnits));
     const maxCost = round <= 3 ? 1 : (round <= 8 ? 2 : (round <= 16 ? 3 : (round <= 26 ? 4 : 5)));
@@ -2865,6 +2928,18 @@ function aiSlot(u, target, radius) {   // góc vây riêng của từng tướng
         u.slotFor = target.uid;
     }
     return [target.x + Math.cos(u.slotAng) * radius, target.y + Math.sin(u.slotAng) * radius];
+}
+
+// Hướng bắn của tướng cầm súng: góc (trên màn hình) từ tướng tới mục tiêu, làm mượt để nòng súng xoay êm
+function updateGunAim(u, tgt, dt) {
+    const k = UNIT_KITS[u.def];
+    if (!k || k.style !== 'gun' || !tgt) return;
+    const ang = Math.atan2((tgt.y - u.y) * rowH, (tgt.x - u.x) * cellSize);
+    if (typeof u.aimAng !== 'number') { u.aimAng = ang; return; }
+    let d = ang - u.aimAng;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    u.aimAng += d * Math.min(1, dt * 14);
 }
 
 function pickTarget(u, dt) {
@@ -3210,6 +3285,107 @@ function kitsuneThrusts(u, target) {
 }
 
 // Viễn Chinh: kẻ địch XA NHẤT (khóa lại; nếu mục tiêu chết thì chọn lại)
+
+// ===== Viễn Chinh: viên đạn plasma thật (không còn là tia laser) =====
+function vcMuzzle(ctx, uid, p1, f, cs) {   // vị trí họng súng đúng như đang được vẽ, quy về không gian vẽ hiệu ứng
+    const m = VC_MUZZLE[uid];
+    if (m) { try { const q = m.a.matrixTransform(ctx.getTransform().inverse()); return { x: q.x, y: q.y }; } catch (e) { } }
+    const S6 = cs * 0.64; return { x: p1.x + 2.0 * S6 * f, y: p1.y - S6 * 0.82 + 0.1 * S6 };
+}
+function vcDrawBullet(ctx, x, y, ang, S, pen, ph, a) {   // đầu đạn: thân thon, mũi nhọn, lõi trắng nóng, vòng năng lượng xoay
+    const hot = Math.min(3, pen || 0) / 3;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.globalCompositeOperation = 'lighter';
+    glowRadial(ctx, 0, 0, S * 1.6, hot > 0.5 ? 'rgba(167,139,250,' : 'rgba(34,211,238,', 0.5 * a);
+    glowRadial(ctx, -S * 0.15, 0, S * 0.85, 'rgba(165,243,252,', 0.7 * a);
+    ctx.globalCompositeOperation = 'source-over';
+    const g = ctx.createLinearGradient(-S * 0.7, 0, S * 0.95, 0);
+    g.addColorStop(0, `rgba(8,145,178,${a})`); g.addColorStop(0.55, `rgba(103,232,249,${a})`); g.addColorStop(1, `rgba(255,255,255,${a})`);
+    ctx.fillStyle = g; ctx.beginPath();
+    ctx.moveTo(S * 0.98, 0); ctx.quadraticCurveTo(S * 0.4, -S * 0.34, -S * 0.5, -S * 0.3); ctx.quadraticCurveTo(-S * 0.78, 0, -S * 0.5, S * 0.3); ctx.quadraticCurveTo(S * 0.4, S * 0.34, S * 0.98, 0); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(14,116,144,${0.9 * a})`; ctx.lineWidth = Math.max(1, S * 0.07); ctx.stroke();
+    ctx.globalCompositeOperation = 'lighter';
+    const cg = ctx.createLinearGradient(-S * 0.3, 0, S * 0.85, 0); cg.addColorStop(0, 'rgba(165,243,252,0)'); cg.addColorStop(1, `rgba(255,255,255,${a})`);
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(S * 0.22, 0, S * 0.62, S * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(196,181,253,${0.85 * a})`; ctx.lineWidth = Math.max(1, S * 0.06);
+    for (let i = 0; i < 2; i++) { const w = Math.abs(Math.sin(ph * 5 + i * 1.7)); ctx.beginPath(); ctx.ellipse(-S * 0.1 - i * S * 0.36, 0, S * 0.07, S * (0.4 + 0.07 * i) * (0.35 + 0.65 * w), 0, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.restore();
+}
+function vcTrail(ctx, mx, my, tx, ty, e, N, gap, r0, a, ph) {   // vệt sao chổi: các đốm sáng nhỏ dần, đổi màu cyan -> tím, lắc nhẹ
+    ctx.globalCompositeOperation = 'lighter';
+    const nx = -(ty - my), ny = (tx - mx), nl = Math.hypot(nx, ny) || 1;
+    for (let k = 1; k <= N; k++) {
+        const s = e - k * gap; if (s < 0) break;
+        const x = mx + (tx - mx) * s, y = my + (ty - my) * s, q = k / N, al = Math.pow(1 - q, 1.7) * a, wob = Math.sin(ph * 14 + k * 1.9) * r0 * 0.6 * q;
+        ctx.fillStyle = `rgba(${Math.round(34 + 130 * q)},${Math.round(211 - 80 * q)},${Math.round(238 + 6 * q)},${0.8 * al})`;
+        ctx.beginPath(); ctx.arc(x + nx / nl * wob, y + ny / nl * wob, Math.max(0.5, r0 * (1 - q * 0.8)), 0, Math.PI * 2); ctx.fill();
+        if (k % 2 === 0) { ctx.fillStyle = `rgba(255,255,255,${0.75 * al})`; ctx.beginPath(); ctx.arc(x, y, Math.max(0.4, r0 * 0.34 * (1 - q)), 0, Math.PI * 2); ctx.fill(); }
+    }
+}
+function vcMuzzleFlash(ctx, x, y, ang, S, k) {   // chớp nòng: tia lửa chĩa về phía trước + quầng sáng
+    if (k <= 0) return;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalCompositeOperation = 'lighter';
+    glowRadial(ctx, 0, 0, S * 1.5 * k, 'rgba(165,243,252,', 0.9 * k);
+    const g = ctx.createLinearGradient(0, 0, S * 2.2, 0); g.addColorStop(0, `rgba(255,255,255,${k})`); g.addColorStop(1, 'rgba(34,211,238,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -S * 0.3 * k); ctx.lineTo(S * 2.2 * k, 0); ctx.lineTo(0, S * 0.3 * k); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(207,250,254,${0.9 * k})`; ctx.lineWidth = 1.8;
+    for (let i = 0; i < 6; i++) { const a = (i - 2.5) * 0.28; ctx.beginPath(); ctx.moveTo(S * 0.2, 0); ctx.lineTo(Math.cos(a) * S * (1.0 + 0.5 * (i % 2)) * k + S * 0.2, Math.sin(a) * S * (1.0 + 0.5 * (i % 2)) * k); ctx.stroke(); }
+    ctx.restore();
+}
+function vcImpactBurst(ctx, x, y, cs, k, big) {   // đạn trúng đích: chớp sáng + vòng sóng + tia lửa
+    const R = cs * (big ? 0.95 : 0.55);
+    ctx.globalCompositeOperation = 'lighter';
+    glowRadial(ctx, x, y, R * (0.9 - 0.5 * k), 'rgba(103,232,249,', 0.85 * (1 - k));
+    glowRadial(ctx, x, y, R * 0.35 * (1 - k), 'rgba(255,255,255,', 0.95);
+    ctx.strokeStyle = `rgba(165,243,252,${0.9 * (1 - k)})`; ctx.lineWidth = big ? 4 : 3;
+    ctx.beginPath(); ctx.ellipse(x, y, R * (0.15 + 0.85 * k), R * (0.15 + 0.85 * k) * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineCap = 'round';
+    for (let i = 0; i < (big ? 10 : 6); i++) {
+        const a = i * 6.2832 / (big ? 10 : 6) + 0.3 + lwHash(i, 31) * 0.4, r0 = R * 0.12, r1 = R * (0.25 + 0.75 * k) * (0.7 + 0.5 * lwHash(i, 32));
+        ctx.strokeStyle = `rgba(${i % 2 ? '196,181,253' : '236,254,255'},${0.9 * (1 - k)})`; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0 * 0.7); ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1 * 0.7); ctx.stroke();
+    }
+}
+
+function vcBarrelDir(ctx, uid) {   // hướng thật của nòng súng (đơn vị) trong không gian vẽ hiệu ứng
+    const m = VC_MUZZLE[uid]; if (!m) return null;
+    try { const inv = ctx.getTransform().inverse(), a = m.a.matrixTransform(inv), b = m.b.matrixTransform(inv), dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1; return { x: dx / l, y: dy / l }; } catch (e) { return null; }
+}
+function vcDrawEagle(ctx, x, y, ang, S, ph, a, ghost) {   // đạn đại bàng: mũi nhọn, cánh quét ra sau răng cưa, đuôi xòe — toàn góc cạnh
+    const flap = 0.1 * Math.sin(ph * 40);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    const wing = [[0.55, 0.14], [-0.95, 1.55 + flap], [-0.98, 1.0], [-1.35, 1.2 + flap], [-1.3, 0.7], [-1.7, 0.8 + flap * 0.7], [-1.55, 0.35], [-1.95, 0.4], [-1.1, 0.16]];
+    const body = [[1.7, 0], [0.55, 0.22], [-0.9, 0.15], [-1.5, 0]];
+    const tail = [[[-1.1, 0.06], [-2.1, 0.3], [-1.7, 0.02]], [[-1.2, 0], [-2.3, 0], [-1.7, 0.05]]];
+    if (ghost) {
+        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(56,189,248,${a})`;
+        [-1, 1].forEach(sd => { ctx.beginPath(); wing.forEach((q, i) => i ? ctx.lineTo(q[0] * S, sd * q[1] * S) : ctx.moveTo(q[0] * S, sd * q[1] * S)); ctx.closePath(); ctx.fill(); });
+        ctx.beginPath(); body.forEach((q, i) => i ? ctx.lineTo(q[0] * S, q[1] * S) : ctx.moveTo(q[0] * S, q[1] * S)); body.slice().reverse().forEach(q => ctx.lineTo(q[0] * S, -q[1] * S)); ctx.closePath(); ctx.fill();
+        ctx.restore(); return;
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    glowRadial(ctx, S * 0.1, 0, S * 2.3, 'rgba(34,211,238,', 0.45 * a);
+    glowRadial(ctx, S * 0.9, 0, S * 1.0, 'rgba(236,254,255,', 0.85 * a);
+    ctx.globalCompositeOperation = 'source-over';
+    [-1, 1].forEach(sd => {   // 2 cánh
+        const g = ctx.createLinearGradient(S * 0.5, 0, -S * 1.9, sd * S * 1.5);
+        g.addColorStop(0, `rgba(165,243,252,${a})`); g.addColorStop(0.45, `rgba(37,99,235,${a})`); g.addColorStop(1, `rgba(124,58,237,${a})`);
+        ctx.fillStyle = g; ctx.beginPath(); wing.forEach((q, i) => i ? ctx.lineTo(q[0] * S, sd * q[1] * S) : ctx.moveTo(q[0] * S, sd * q[1] * S)); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = `rgba(8,47,73,${0.9 * a})`; ctx.lineWidth = Math.max(1, S * 0.05); ctx.stroke();
+        ctx.strokeStyle = `rgba(207,250,254,${0.85 * a})`; ctx.lineWidth = Math.max(1, S * 0.035);   // viền cánh sáng + khe lông
+        ctx.beginPath(); ctx.moveTo(0.55 * S, sd * 0.14 * S); ctx.lineTo(-0.95 * S, sd * 1.55 * S); ctx.stroke();
+        ctx.lineWidth = Math.max(0.8, S * 0.02); ctx.strokeStyle = `rgba(165,243,252,${0.6 * a})`;
+        [[-0.98, 1.0], [-1.3, 0.7], [-1.55, 0.35]].forEach(q => { ctx.beginPath(); ctx.moveTo(0.1 * S, sd * 0.16 * S); ctx.lineTo(q[0] * S, sd * q[1] * S); ctx.stroke(); });
+    });
+    tail.forEach(tr => [-1, 1].forEach(sd => { if (tr[1][1] === 0 && sd === 1) return; ctx.fillStyle = `rgba(56,189,248,${0.9 * a})`; ctx.beginPath(); tr.forEach((q, i) => i ? ctx.lineTo(q[0] * S, sd * q[1] * S) : ctx.moveTo(q[0] * S, sd * q[1] * S)); ctx.closePath(); ctx.fill(); ctx.strokeStyle = `rgba(8,47,73,${0.8 * a})`; ctx.lineWidth = Math.max(1, S * 0.04); ctx.stroke(); }));
+    const bg = ctx.createLinearGradient(-S * 1.5, 0, S * 1.7, 0); bg.addColorStop(0, `rgba(14,116,144,${a})`); bg.addColorStop(0.6, `rgba(165,243,252,${a})`); bg.addColorStop(1, `rgba(255,255,255,${a})`);
+    ctx.fillStyle = bg; ctx.beginPath(); body.forEach((q, i) => i ? ctx.lineTo(q[0] * S, q[1] * S) : ctx.moveTo(q[0] * S, q[1] * S)); body.slice().reverse().forEach(q => ctx.lineTo(q[0] * S, -q[1] * S)); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(8,47,73,${0.9 * a})`; ctx.lineWidth = Math.max(1, S * 0.05); ctx.stroke();
+    ctx.fillStyle = `rgba(196,181,253,${a})`; ctx.beginPath(); ctx.moveTo(1.0 * S, -0.05 * S); ctx.lineTo(0.62 * S, -0.13 * S); ctx.lineTo(0.7 * S, 0.0); ctx.closePath(); ctx.fill();   // mắt đại bàng
+    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.beginPath(); ctx.moveTo(1.75 * S, 0); ctx.lineTo(0.2 * S, -0.1 * S); ctx.lineTo(-0.7 * S, 0); ctx.lineTo(0.2 * S, 0.1 * S); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
 function vcAimTarget(u) {
     let t = u.vcAimUid ? state.combatUnits.find(e => e.uid === u.vcAimUid && e.hp > 0 && e.isEnemy !== u.isEnemy) : null;
     if (!t) {
@@ -3386,7 +3562,7 @@ function castSkillBase(u, target) {
             break;
         }
         case 'vienchinh': {
-            const s = u.star, base = s === 3 ? 880 : (s === 2 ? 660 : 440);
+            const s = u.star, base = s === 3 ? 1120 : (s === 2 ? 840 : 560);
             const aim = vcAimTarget(u); if (!aim) break;
             u.vcAimUid = null;
             u.facing = aim.x >= u.x ? 1 : -1;
@@ -3394,16 +3570,22 @@ function castSkillBase(u, target) {
             const ln = vcLineTargets(u, aim);
             const endX = u.x + ln.ux * (ln.L + 1.5), endY = u.y + ln.uy * (ln.L + 1.5);
             SoundFX.vcFire(u.x);
-            spawnEffect('vcBeam', endX, endY, '#22d3ee', 1, 0.6, u.x, u.y, { facing: u.facing });
+            spawnEffect('vcBeam', endX, endY, '#22d3ee', 1, 0.95, u.x, u.y, { facing: u.facing, uid: u.uid });
             spawnParticles(u.x + u.facing * 1.2, u.y - 0.3, '#67e8f9', 14, { speed: 1.6, size: 2.6, life: 0.5 });
-            state.screenShake = { time: 0.2, intensity: 4 };
+            state.screenShake = { time: 0.35, intensity: 7 };
             spawnFloatingText(u.x, u.y - 1.3, '🎯 KHÓA MỤC TIÊU', '#67e8f9', 11);
+            const FLY_T = 0.15, PATH = ln.L + 1.5;   // đạn bay ~0.38s; trúng mỗi mục tiêu đúng lúc viên đạn lướt qua
             const hit = (e, mult) => {
-                dealDamage(u, e, (base + u.dmg * 1.65) * mult, 'physical', false, false);
-                spawnEffect('vcImpact', e.x, e.y, '#67e8f9', mult >= 1 ? 1.1 : 0.75, 0.5, e.x, e.y);
-                spawnParticles(e.x, e.y, '#22d3ee', mult >= 1 ? 14 : 8, { speed: 1.5, size: 2.4, life: 0.5 });
-                spawnParticles(e.x, e.y, '#ffffff', 5, { speed: 0.9, size: 2, life: 0.35 });
-                applyMorello(u, e);
+                const along = Math.max(0, Math.min(PATH, (e.x - u.x) * ln.ux + (e.y - u.y) * ln.uy));
+                schedule(FLY_T * along / PATH, () => {
+                    if (state.phase !== 'combat' || e.hp <= 0) return;
+                    dealDamage(u, e, (base + u.dmg * 2.0) * mult, 'physical', false, false);
+                    spawnEffect('vcImpact', e.x, e.y, '#67e8f9', mult >= 1 ? 1.7 : 1.1, 0.6, e.x, e.y);
+                    spawnEffect('vcTalon', e.x, e.y, '#a5f3fc', mult >= 1 ? 1.7 : 1.2, 0.5, e.x, e.y);
+                    spawnParticles(e.x, e.y, '#22d3ee', mult >= 1 ? 14 : 8, { speed: 1.5, size: 2.4, life: 0.5 });
+                    spawnParticles(e.x, e.y, '#ffffff', 5, { speed: 0.9, size: 2, life: 0.35 });
+                    applyMorello(u, e);
+                });
             };
             hit(aim, 1.0);
             ln.list.forEach(e => hit(e, 0.6));
@@ -3690,10 +3872,10 @@ function castSkillBase(u, target) {
             break;
         }
         case 'vanguard': {
-            const base = u.star === 3 ? 250 : (u.star === 2 ? 165 : 110);
-            dealDamage(u, target, (base + u.armor * 1.1 + apBonus(u)) * critMult, 'magic', skillCrit, false);
+            const base = u.star === 3 ? 460 : (u.star === 2 ? 290 : 190);
+            dealDamage(u, target, (base + u.armor * 1.6 + apBonus(u)) * critMult, 'magic', skillCrit, false);
             applyMorello(u, target);
-            applyStun(target, 1.1);
+            applyStun(target, 1.6);
             spawnEffect('shieldBash', target.x, target.y, '#60a5fa', 1.35, 0.34, u.x, u.y);
             SoundFX.playSkill(u.x);
             break;
@@ -4376,7 +4558,7 @@ function performBasicAttack(u, target) {
     }
     dealDamage(u, target, dmg, dmgType, crit, true);
     if (u.def === 'vienchinh') {   // nội tại Đạn Xuyên Giáp: mỗi đòn tích Xuyên Giáp
-        const gainP = u.star === 3 ? 0.20 : (u.star === 2 ? 0.15 : 0.10);
+        const gainP = u.star === 3 ? 0.12 : (u.star === 2 ? 0.09 : 0.06);
         const stk = Math.min(3, (u.vcStacks || 0) + 1);
         if (stk !== u.vcStacks) {
             u.vcStacks = stk; u.vcPen = stk * gainP;
@@ -4462,7 +4644,7 @@ function performBasicAttack(u, target) {
         spawnEffect('handLightning', target.x, target.y, '#38bdf8', 0.7, 0.22, u.x - 0.18, u.y - 0.12);
         spawnEffect('handLightning', target.x, target.y, '#7dd3fc', 0.7, 0.22, u.x + 0.18, u.y - 0.12);
     } else if (u.def === 'vienchinh') {
-        spawnEffect('vcBolt', target.x, target.y, '#22d3ee', 0.6, 0.3, u.x, u.y, { facing: u.facing || 1, pen: u.vcStacks || 0 });
+        spawnEffect('vcBolt', target.x, target.y, '#22d3ee', 0.6, 0.3, u.x, u.y, { facing: u.facing || 1, pen: u.vcStacks || 0, uid: u.uid });
     } else if (u.def === 'artillery') {
         spawnEffect('gunTracer', target.x, target.y, '#fdba74', 0.5, 0.22, u.x, u.y, { facing: u.facing || 1, crit });
         spawnParticles(target.x, target.y, '#fbbf24', 4, { speed: 1.0, size: 2, life: 0.25 });
@@ -4585,7 +4767,8 @@ function startCombat() {
     state.combatUnits.forEach(c => { c.shieldTimer = c.shield > 0 ? 10 : 0; });
     
     state.combatUnits.filter(u => u.def === 'vanguard').forEach(u => {
-        const buffAmt = u.star === 3 ? 38 : (u.star === 2 ? 25 : 12);
+        const buffAmt = u.star === 3 ? 80 : (u.star === 2 ? 50 : 28);
+        u.shield = (u.shield || 0) + Math.round(buffAmt * 0.4);
         const allies = state.combatUnits.filter(e => e.isEnemy === u.isEnemy && e !== u && e.hp > 0);
         allies.sort((a,b) => Math.hypot(a.x-u.x, a.y-u.y) - Math.hypot(b.x-u.x, b.y-u.y));
         if(allies[0]) {
@@ -4663,13 +4846,13 @@ function spiritSay(force) {
         let i; do { i = Math.floor(Math.random() * SPIRIT_VOICES.length); } while (i === V.last && SPIRIT_VOICES.length > 1);
         V.last = i; V.gap = now + 900; V.busyUntil = now + 1500;
         const ctx = SoundFX.ctx;
-        const fallback = () => { try { const a = new Audio('data:audio/mpeg;base64,' + SPIRIT_VOICES[i]); a.volume = 0.5; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} };
+        const fallback = () => { try { const a = new Audio('data:audio/mpeg;base64,' + SPIRIT_VOICES[i]); a.volume = 0.45; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (e) {} };
         if (!ctx) { fallback(); return; }
         spiritVoiceBuf(i).then(buf => {
             if (!buf) { fallback(); return; }
             if (ctx.state === 'suspended') ctx.resume();
             const src = ctx.createBufferSource(), g = ctx.createGain();
-            src.buffer = buf; g.gain.value = 0.55;   // nhỏ tiếng hơn
+            src.buffer = buf; g.gain.value = 0.45;   // nhỏ tiếng hơn
             // EQ cho tiếng trong: cắt ù trầm, nâng nhẹ dải giọng nói (3kHz) và độ lấp lánh (7kHz)
             const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 150;
             const pk = ctx.createBiquadFilter(); pk.type = 'peaking'; pk.frequency.value = 3200; pk.Q.value = 0.9; pk.gain.value = 3.5;
@@ -4949,8 +5132,8 @@ function updateCombat(dt) {
             u.castWind -= dt;
             u.moveBlend = Math.max(0, u.moveBlend - dt * 6);
             u.animCast = 0.18;
-            const tg = state.combatUnits.find(e => e.uid === u.castTargetUid && e.hp > 0) || getNearestEnemies(u, 1)[0];
-            if (tg) u.facing = tg.x >= u.x ? 1 : -1;
+            const tg = (u.def === 'vienchinh' ? vcAimTarget(u) : null) || state.combatUnits.find(e => e.uid === u.castTargetUid && e.hp > 0) || getNearestEnemies(u, 1)[0];
+            if (tg) { u.facing = tg.x >= u.x ? 1 : -1; updateGunAim(u, tg, dt); }
             if (Math.random() < dt * 22) spawnParticles(u.x, u.y + 0.1, (CLASSES[u.def] || {}).secondary || '#fde047', 1, { speed: 0.5, size: 2, life: 0.5 });
             if (u.castWind <= 0) { u.castWind = 0; resolveCast(u); }
             return;
@@ -4958,6 +5141,7 @@ function updateCombat(dt) {
 
         const target = pickTarget(u, dt);
         if (!target) return;
+        updateGunAim(u, target, dt);
 
         const dx = target.x - u.x;
         const dy = target.y - u.y;
@@ -5150,6 +5334,10 @@ function endCombat(playerWon, celebrated) {
     }
 
     state.round++;
+    if ((state.forgeRounds || []).includes(state.round)) {   // Lò Rèn rơi ra
+        state.inventory.push('forge');
+        showToast(`🔥 ${ITEMS.forge.name} rơi ra ở Vòng ${state.round}! Dùng để đổi 1 trang bị thành món cùng cấp ngẫu nhiên.`, 'success');
+    }
     state.xp += 2;
     while (state.level < 10 && state.xp >= LEVEL_XP[state.level]) {
         state.xp -= LEVEL_XP[state.level];
@@ -5169,7 +5357,7 @@ function endCombat(playerWon, celebrated) {
     renderTraitsBar();
     renderInventory();
 
-    if ([2, 5, 9, 15, 21, 28, 35].includes(state.round)) {
+    if ([2, 5, 9, 15, 21, 28, 35, 42].includes(state.round)) {
         openAugmentModal();
     } else if (state.round % 2 === 1) {
         openAnvilModal();
@@ -6789,7 +6977,9 @@ function wpShotgun(c, T) {
         c.restore();
     }
 }
+const VC_MUZZLE = {};   // uid -> toạ độ họng súng (không gian thiết bị), cập nhật mỗi lần vẽ khẩu súng
 function wpNeonRifle(c, T) {
+    if (T && typeof T.uid !== 'undefined') { const m = c.getTransform(); VC_MUZZLE[T.uid] = { a: new DOMPoint(0, -1.95).matrixTransform(m), b: new DOMPoint(0, -2.95).matrixTransform(m) }; }
     // súng trường laser cực dài (gốc = tay cầm, nòng hướng -y)
     const ch = Math.min(1, T.cast || 0), pu = 0.6 + 0.4 * Math.sin(T.t * 9 + T.uid);
     fillPoly(c, [[-0.05, 0.0], [0.05, 0.0], [0.08, 0.3], [-0.09, 0.32]], '#1e293b');                                  // báng/tay cầm
@@ -6856,7 +7046,8 @@ function wpSawCleaver(c, T) {
         const w = 0.80, h = w * HUNTER_BLADE.naturalHeight / HUNTER_BLADE.naturalWidth;   // chiều rộng ảnh ~0.8 đơn vị
         const px = 0.42 * w, py = 0.84 * h;   // điểm cầm trên cán cong
         c.save();
-        c.rotate(-0.86);   // lưỡi dựng lên, nghiêng ra sau vai (không che mặt)
+        c.scale(-1, 1);    // đảo chiều cưa sang hướng ngược lại
+        c.rotate(-0.86);
         c.drawImage(HUNTER_BLADE, -px, -py, w, h);
         c.restore();
         return;
@@ -8289,13 +8480,16 @@ function computePose(kit, T) {
     const a = T.atk;
     const cp = T.cast;
     const st = kit.style;
-    const idleW = st === 'staff' ? 0.14 : (st === 'spear' ? 0.08 : (st === 'gun' ? 1.5 : 0.34));
+    // Tướng cầm súng: xoay nòng thẳng theo hướng tới mục tiêu (T.aim = góc cục bộ so với hướng nhìn)
+    const gunAim = (st === 'gun' && typeof T.aim === 'number' && !T.stun) ? T.aim + Math.PI / 2 : null;
+    const gunIdle = gunAim === null ? 1.5 : (kit.shoot ? gunAim : lerpN(1.5, gunAim, 0.55));
+    const idleW = st === 'staff' ? 0.14 : (st === 'spear' ? 0.08 : (st === 'gun' ? gunIdle : 0.34));
     const sway = Math.sin(T.t * 2.6 + T.uid) * 0.014;
     let rh = [0.37, 0.43 + sway], rw = idleW, lh = [-0.36, 0.43 + sway], lw = 0;
     let pull = 0;
 
     if (st === 'bow') { lh = [0.46, 0.0]; lw = 0; rh = [0.28, 0.3]; rw = 0; }
-    if (st === 'gun') { rh = [0.3, 0.1]; rh[1] += sway; lh = [0.04, 0.32 + sway]; lw = 0.75 + sway * 3; }
+    if (st === 'gun') { rh = [0.3, 0.1]; rh[1] += sway + (gunAim !== null ? Math.sin(T.aim) * 0.1 : 0); lh = [0.04, 0.32 + sway]; lw = 0.75 + sway * 3; }
     if (st === 'fist') { rh = [0.34, 0.26]; lh = [-0.3, 0.28]; }
 
     if (T.move > 0.05) {
@@ -8350,7 +8544,7 @@ function computePose(kit, T) {
         } else if (st === 'bow') {
             rh = lerp2(rh, [0.0, -0.05], cp * 0.8); pull = Math.max(pull, cp);
         } else if (st === 'gun') {
-            rh = lerp2(rh, [0.32, 0.02], cp); rw = lerpN(rw, 1.42, cp); lh = lerp2(lh, [0.0, 0.36], cp); lw = lerpN(lw, 0.45, cp);
+            rh = lerp2(rh, [0.32, 0.02 + (gunAim !== null ? Math.sin(T.aim) * 0.1 : 0)], cp); rw = lerpN(rw, gunAim !== null ? gunAim - 0.08 : 1.42, cp); lh = lerp2(lh, [0.0, 0.36], cp); lw = lerpN(lw, 0.45, cp);
         } else {
             rh = lerp2(rh, [0.3, -0.62], cp); rw = lerpN(rw, st === 'fist' ? 0 : 0.2, cp); lh = lerp2(lh, [-0.28, -0.56], cp);
         }
@@ -9038,7 +9232,8 @@ function drawUnitBase(ctx, u, sx, sy, cellSize, timeSec = 0) {
     const blink = ((timeSec * 0.55 + u.uid * 0.37) % 3.4) < 0.11 ? 0.12 : 1;
     const T = {
         t: timeSec, uid: u.uid || 1, move: moveBlend, phase, atk, cast: Math.max(castProg, windE * 0.9), empower: u.halberdEmpowerTimer > 0, spin: spinProg, stab: stabProg, stun: isStunned,
-        blink, u, fl: Math.sin(timeSec * 5 + (u.uid || 1)) * 0.035 + moveBlend * 0.13, recoil: 0, pull: 0, castRel: u.animCast > 0 ? u.animCast / 0.36 : 0
+        blink, u, fl: Math.sin(timeSec * 5 + (u.uid || 1)) * 0.035 + moveBlend * 0.13, recoil: 0, pull: 0, castRel: u.animCast > 0 ? u.animCast / 0.36 : 0,
+        aim: (kit.style === 'gun' && typeof u.aimAng === 'number') ? Math.max(-1.25, Math.min(1.25, Math.atan2(Math.sin(u.aimAng), Math.cos(u.aimAng) * (fxScale < 0 ? -1 : 1)))) : undefined
     };
 
     ctx.save();
@@ -10609,23 +10804,18 @@ function renderArena(timeSec, dt) {
             ctx.moveTo(p2.x, p2.y - cl * 0.7); ctx.lineTo(p2.x, p2.y - cl * 0.18); ctx.moveTo(p2.x, p2.y + cl * 0.18); ctx.lineTo(p2.x, p2.y + cl * 0.7); ctx.stroke();
             ctx.fillStyle = `rgba(255,255,255,${(0.6 + 0.4 * Math.sin(timeSec * 14)) * ramp})`; ctx.beginPath(); ctx.arc(p2.x, p2.y, cellSize * 0.04, 0, TAU2); ctx.fill();
         } else if (ef.type === 'vcBolt') {
-            // Đạn neon: lõi trắng, quầng xanh, vệt dài + vòng xung kích khi trúng
-            const S6 = cellSize * 0.64, f = (ef.extra && ef.extra.facing) || 1, TAU2 = Math.PI * 2, stk = (ef.extra && ef.extra.pen) || 0;
-            const mx = p1.x + 2.0 * S6 * f, my = p1.y - S6 * 0.82 + 0.1 * S6, tx = p2.x, ty = p2.y - cellSize * 0.3;
-            const e = Math.min(1, t * 3.4), e0 = Math.max(0, e - 0.4);
-            ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - Math.max(0, (t - 0.55) / 0.45); ctx.lineCap = 'round';
-            const ax = mx + (tx - mx) * e0, ay = my + (ty - my) * e0, bx = mx + (tx - mx) * e, by = my + (ty - my) * e;
-            ctx.strokeStyle = 'rgba(34,211,238,0.35)'; ctx.lineWidth = 9 + stk * 1.5; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-            ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-            glowRadial(ctx, bx, by, cellSize * 0.2, 'rgba(103,232,249,', 0.9);
-            if (t < 0.3) glowRadial(ctx, mx, my, cellSize * 0.3 * (1 - t / 0.3), 'rgba(165,243,252,', 0.95);
-            if (e >= 1) {
-                const k = (t - 0.294) / 0.706;
-                ctx.strokeStyle = 'rgba(165,243,252,' + (0.9 * (1 - k)) + ')'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.ellipse(tx, ty, cellSize * (0.08 + 0.3 * k), cellSize * (0.08 + 0.3 * k) * 0.55, 0, 0, TAU2); ctx.stroke();
-                for (let i = 0; i < 5; i++) { const a = i * TAU2 / 5 + 0.3, r0 = cellSize * 0.05, r1 = cellSize * (0.1 + 0.22 * k); ctx.beginPath(); ctx.moveTo(tx + Math.cos(a) * r0, ty + Math.sin(a) * r0); ctx.lineTo(tx + Math.cos(a) * r1, ty + Math.sin(a) * r1); ctx.stroke(); }
-                glowRadial(ctx, tx, ty, cellSize * 0.22 * (1 - k), 'rgba(34,211,238,', 0.8);
+            // Viên đạn plasma bay thẳng ra từ họng súng tới mục tiêu: đầu đạn thon sáng, vệt sao chổi, chớp nòng, nổ khi trúng
+            const f = (ef.extra && ef.extra.facing) || 1, stk = (ef.extra && ef.extra.pen) || 0, cs = cellSize;
+            const mz = vcMuzzle(ctx, ef.extra && ef.extra.uid, p1, f, cs), tx = p2.x, ty = p2.y - cs * 0.3;
+            const FLY = 0.62, e = Math.min(1, t / FLY), ang = Math.atan2(ty - mz.y, tx - mz.x), alpha = 1 - Math.max(0, (t - 0.8) / 0.2);
+            ctx.globalAlpha = 1;
+            vcMuzzleFlash(ctx, mz.x, mz.y, ang, cs * (0.16 + 0.02 * stk), 1 - t / 0.22);
+            if (e < 1) {
+                vcTrail(ctx, mz.x, mz.y, tx, ty, e, 18, 0.03, cs * (0.13 + 0.012 * stk), alpha, timeSec);
+                vcDrawBullet(ctx, mz.x + (tx - mz.x) * e, mz.y + (ty - mz.y) * e, ang, cs * (0.17 + 0.015 * stk), stk, timeSec, alpha);
+            } else {
+                vcTrail(ctx, mz.x, mz.y, tx, ty, 1 + (t - FLY) * 0.6, 10, 0.03, cs * 0.1, alpha * (1 - (t - FLY) / (1 - FLY)), timeSec);
+                vcImpactBurst(ctx, tx, ty, cs, (t - FLY) / (1 - FLY), false);
             }
         } else if (ef.type === 'vcLaser') {
             // Laser khóa mục tiêu: bám theo kẻ địch xa nhất, đổi màu xanh -> tím trắng khi sắp bắn; vòng khóa xoay quanh mục tiêu
@@ -10636,7 +10826,7 @@ function renderArena(timeSec, dt) {
                 if (aimT) {
                     const S6 = cellSize * 0.64, f = U.facing || 1, TAU2 = Math.PI * 2;
                     const q = boardToScreen(U.x, U.y), z = boardToScreen(aimT.x, aimT.y);
-                    const mx = q.x + 2.0 * S6 * f, my = q.y - S6 * 0.82 + 0.1 * S6, tx = z.x, ty = z.y - cellSize * 0.3;
+                    const mzL = vcMuzzle(ctx, U.uid, q, f, cellSize), mx = mzL.x, my = mzL.y, tx = z.x, ty = z.y - cellSize * 0.3;
                     const ramp = Math.min(1, t * 4), hot = Math.max(0, (t - 0.6) / 0.4), pulse = 0.75 + 0.25 * Math.sin(timeSec * (10 + hot * 30));
                     const col = hot > 0.5 ? '196,181,253' : '34,211,238';
                     ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1; ctx.lineCap = 'round';
@@ -10657,21 +10847,52 @@ function renderArena(timeSec, dt) {
                 } else ef.life = 0;
             }
         } else if (ef.type === 'vcBeam') {
-            // Đạn xuyên neon: tia sáng dày quét thẳng qua sàn, mờ dần
-            const S6 = cellSize * 0.64, f = (ef.extra && ef.extra.facing) || 1, TAU2 = Math.PI * 2;
-            const mx = p1.x + 2.0 * S6 * f, my = p1.y - S6 * 0.82 + 0.1 * S6, tx = p2.x, ty = p2.y - cellSize * 0.3;
-            const adv = Math.min(1, t * 7), fade = 1 - Math.pow(Math.max(0, (t - 0.12) / 0.88), 1.2);
-            const hx = mx + (tx - mx) * adv, hy = my + (ty - my) * adv, tl = Math.max(0, adv - 0.55);
-            const bx0 = mx + (tx - mx) * (t > 0.2 ? 0 : tl), by0 = my + (ty - my) * (t > 0.2 ? 0 : tl);
-            ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1; ctx.lineCap = 'round';
-            ctx.strokeStyle = 'rgba(99,102,241,' + (0.35 * fade) + ')'; ctx.lineWidth = 26 * (0.4 + 0.6 * fade); ctx.beginPath(); ctx.moveTo(bx0, by0); ctx.lineTo(hx, hy); ctx.stroke();
-            ctx.strokeStyle = 'rgba(34,211,238,' + (0.7 * fade) + ')'; ctx.lineWidth = 12 * (0.4 + 0.6 * fade); ctx.beginPath(); ctx.moveTo(bx0, by0); ctx.lineTo(hx, hy); ctx.stroke();
-            ctx.strokeStyle = 'rgba(255,255,255,' + fade + ')'; ctx.lineWidth = 4 * (0.3 + 0.7 * fade); ctx.beginPath(); ctx.moveTo(bx0, by0); ctx.lineTo(hx, hy); ctx.stroke();
-            if (t < 0.4) glowRadial(ctx, mx, my, cellSize * 0.55 * (1 - t / 0.4), 'rgba(165,243,252,', 1);
-            // vòng sóng kích từ họng
-            const rk = Math.min(1, t * 2.2);
-            ctx.strokeStyle = 'rgba(165,243,252,' + (0.8 * (1 - rk)) + ')'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.ellipse(mx, my, cellSize * 0.5 * rk, cellSize * 0.5 * rk * 1.2, 0, 0, TAU2); ctx.stroke();
+            // ĐẠI BÀNG LAO XUỐNG: viên đạn góc cạnh hình đại bàng bay cực nhanh ra từ họng súng, để lại bóng mờ liên tiếp,
+            // mảnh lông sắc rơi theo đường bay, sóng gió hình chữ V phía sau
+            const f = (ef.extra && ef.extra.facing) || 1, cs = cellSize, TAU2 = Math.PI * 2;
+            const mz = vcMuzzle(ctx, ef.extra && ef.extra.uid, p1, f, cs);
+            let tx = p2.x, ty = p2.y - cs * 0.3, dx = tx - mz.x, dy = ty - mz.y;
+            const lenP = Math.hypot(dx, dy) || 1, bd = vcBarrelDir(ctx, ef.extra && ef.extra.uid);
+            if (bd && (bd.x * dx + bd.y * dy) / lenP > 0.96) { dx = bd.x * lenP; dy = bd.y * lenP; tx = mz.x + dx; ty = mz.y + dy; }   // bay thẳng theo trục nòng
+            const FLY = 0.16, e = Math.min(1, t / FLY), ang = Math.atan2(dy, dx), alpha = 1 - Math.max(0, (t - 0.8) / 0.2), S = cs * 0.42;
+            ctx.globalAlpha = 1;
+            // chớp nòng cỡ lớn + mảnh lông bắn tung
+            vcMuzzleFlash(ctx, mz.x, mz.y, ang, cs * 0.5, 1 - t / 0.26);
+            if (t < 0.3) { const k = t / 0.3; ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 9; i++) { const a2 = ang + (i - 4) * 0.2 + lwHash(i, 51) * 0.1, r0 = cs * 0.15, r1 = cs * (0.5 + 1.1 * lwHash(i, 52)) * (0.3 + 0.7 * k); ctx.fillStyle = `rgba(${i % 2 ? '196,181,253' : '207,250,254'},${0.9 * (1 - k)})`; ctx.beginPath(); ctx.moveTo(mz.x + Math.cos(a2) * r0, mz.y + Math.sin(a2) * r0); ctx.lineTo(mz.x + Math.cos(a2 + 0.07) * r1 * 0.55, mz.y + Math.sin(a2 + 0.07) * r1 * 0.55); ctx.lineTo(mz.x + Math.cos(a2) * r1, mz.y + Math.sin(a2) * r1); ctx.lineTo(mz.x + Math.cos(a2 - 0.07) * r1 * 0.55, mz.y + Math.sin(a2 - 0.07) * r1 * 0.55); ctx.closePath(); ctx.fill(); } }
+            // mảnh lông sắc rơi lại dọc đường bay
+            ctx.globalCompositeOperation = 'lighter';
+            for (let i = 0; i < 44; i++) {
+                const sp = lwHash(i, 41), tp = FLY * sp; if (t < tp) continue;
+                const k = (t - tp) / (1 - tp); if (k >= 1) continue;
+                const nl = lenP, nxx = -dy / nl, nyy = dx / nl, off = (lwHash(i, 42) - 0.5) * cs * 1.2 * (0.4 + k);
+                const x = mz.x + dx * sp + nxx * off, y = mz.y + dy * sp + nyy * off - k * cs * 0.4 * (0.4 + lwHash(i, 43)), ra = ang + (lwHash(i, 45) - 0.5) * 2.4 + k * 2.0 * (lwHash(i, 46) - 0.5);
+                const L = cs * (0.08 + 0.16 * lwHash(i, 44)) * (1 - 0.5 * k), al = Math.pow(1 - k, 1.1) * (0.6 + 0.4 * Math.sin(timeSec * 14 + i));
+                ctx.fillStyle = `rgba(${i % 3 === 0 ? '196,181,253' : (i % 3 === 1 ? '103,232,249' : '236,254,255')},${0.9 * al})`;
+                ctx.beginPath(); ctx.moveTo(x + Math.cos(ra) * L, y + Math.sin(ra) * L); ctx.lineTo(x + Math.cos(ra + 2.5) * L * 0.35, y + Math.sin(ra + 2.5) * L * 0.35); ctx.lineTo(x - Math.cos(ra) * L * 0.5, y - Math.sin(ra) * L * 0.5); ctx.lineTo(x + Math.cos(ra - 2.5) * L * 0.35, y + Math.sin(ra - 2.5) * L * 0.35); ctx.closePath(); ctx.fill();
+            }
+            if (t < FLY + 0.22) {
+                const eh = Math.min(1, e), hx = mz.x + dx * eh, hy = mz.y + dy * eh, fadeT = e < 1 ? 1 : Math.max(0, 1 - (t - FLY) / 0.22);
+                // sóng gió chữ V phía sau
+                ctx.save(); ctx.translate(hx, hy); ctx.rotate(ang); ctx.globalCompositeOperation = 'lighter';
+                [-1, 1].forEach(sd => { const g = ctx.createLinearGradient(0, 0, -cs * 2.6, sd * cs * 1.2); g.addColorStop(0, `rgba(165,243,252,${0.5 * fadeT * alpha})`); g.addColorStop(1, 'rgba(37,99,235,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-S * 0.6, sd * S * 0.2); ctx.lineTo(-cs * 2.6, sd * cs * 1.2); ctx.lineTo(-cs * 2.1, sd * cs * 0.55); ctx.closePath(); ctx.fill(); });
+                ctx.restore();
+                // bóng mờ liên tiếp của đại bàng (tốc độ cực nhanh)
+                for (let k = 7; k >= 1; k--) { const s = eh - k * 0.07; if (s < 0) continue; vcDrawEagle(ctx, mz.x + dx * s, mz.y + dy * s, ang, S * (1 - k * 0.04), timeSec, 0.55 * Math.pow(1 - k / 8, 1.5) * fadeT * alpha, true); }
+                // viên đạn đại bàng chính
+                if (fadeT > 0) vcDrawEagle(ctx, hx, hy, ang, S, timeSec, alpha * fadeT, false);
+            }
+            if (e >= 1 && t < FLY + 0.3) { const k = (t - FLY) / 0.3; glowRadial(ctx, tx, ty, cs * (0.5 + 1.0 * k), 'rgba(165,243,252,', 0.8 * (1 - k)); ctx.strokeStyle = `rgba(236,254,255,${0.9 * (1 - k)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(tx, ty, cs * (0.2 + 1.1 * k), cs * (0.2 + 1.1 * k) * 0.6, 0, 0, TAU2); ctx.stroke(); }
+        } else if (ef.type === 'vcTalon') {
+            // Vuốt đại bàng: 3 vết cào chéo góc cạnh
+            const cs = cellSize, R = ef.radius * cs * 0.5, ty = p2.y - cs * 0.3, k = Math.min(1, t * 3.5), fade = Math.max(0, 1 - Math.max(0, (t - 0.45) / 0.55));
+            ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1;
+            glowRadial(ctx, p2.x, ty, R * 1.3 * (1 - t * 0.5), 'rgba(103,232,249,', 0.55 * fade);
+            for (let i = -1; i <= 1; i++) {
+                const ox = i * R * 0.42, x0 = p2.x - R * 0.55 + ox, y0 = ty - R * 0.95, x1 = p2.x + R * 0.45 + ox, y1 = ty + R * 0.95, hx = x0 + (x1 - x0) * k, hy = y0 + (y1 - y0) * k;
+                const nx = (y1 - y0), ny = -(x1 - x0), nl = Math.hypot(nx, ny) || 1, w = R * 0.1;
+                ctx.fillStyle = `rgba(103,232,249,${0.55 * fade})`; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo((x0 + hx) / 2 + nx / nl * w * 2.2, (y0 + hy) / 2 + ny / nl * w * 2.2); ctx.lineTo(hx, hy); ctx.lineTo((x0 + hx) / 2 - nx / nl * w * 2.2, (y0 + hy) / 2 - ny / nl * w * 2.2); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = `rgba(255,255,255,${0.95 * fade})`; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo((x0 + hx) / 2 + nx / nl * w, (y0 + hy) / 2 + ny / nl * w); ctx.lineTo(hx, hy); ctx.lineTo((x0 + hx) / 2 - nx / nl * w, (y0 + hy) / 2 - ny / nl * w); ctx.closePath(); ctx.fill();
+            }
         } else if (ef.type === 'vcImpact') {
             const TAU2 = Math.PI * 2, k = t, R = ef.radius * cellSize, ty = p2.y - cellSize * 0.3;
             ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1 - k;
@@ -11915,7 +12136,7 @@ function basicPreview(u) {
         case 'nebula': hit = D * cf * 1.4 + pt * 0.35; note = '70% vật lý + 70% phép'; break;
         case 'acolyte': note = 'phép'; break;
         case 'ludwig': hit = (s === 3 ? 430 : (s === 2 ? 290 : 190)) + D * 0.85 + apBonus(u) + D * 0.75; note = 'phép + vật lý (+ năng lượng trăng tích)'; break;
-        case 'vienchinh': hit = D * 2.0; note = 'không chí mạng, tích ' + (s === 3 ? 20 : (s === 2 ? 15 : 10)) + '% xuyên giáp/đòn (tối đa 3)'; break;
+        case 'vienchinh': hit = D * 2.0; note = 'không chí mạng, tích ' + (s === 3 ? 12 : (s === 2 ? 9 : 6)) + '% xuyên giáp/đòn (tối đa 3)'; break;
         case 'count': note = 'lan 40% sang địch gần'; break;
     }
     let as = u.def === 'nebula' ? CLASSES.nebula.as : u.as;
@@ -11929,7 +12150,7 @@ function skillPreview(u) {
     const R = [], add = (label, val, kind) => R.push({ label, val, kind });
     switch (u.def) {
         case 'warrior': { const m = pick(1.15, 1.35, 1.6); add('Mỗi cú đấm (×2)', f(D * m), 'phys'); add('Tổng 2 cú', f(D * m * 2), 'phys'); add('Hồi máu', Math.round(pick(60, 95, 145) + D * 0.45), 'heal'); break; }
-        case 'vanguard': add('Đập khiên (phép, choáng)', f(pick(110, 165, 250) + u.armor * 1.1 + ab), 'magic'); break;
+        case 'vanguard': add('Đập khiên (phép, choáng 1.6s)', f(pick(190, 290, 460) + u.armor * 1.6 + ab), 'magic'); break;
         case 'rogue': add('Đâm lén (vật lý)', f(D * pick(1.4, 1.7, 2.05)), 'phys'); add('ST chuẩn kèm theo', f(pick(35, 60, 95) + D * 0.3), 'true'); add('Cộng % máu đã mất (ST chuẩn)', `${pick(6, 8, 10)}%`, 'true'); add('Nội tại kết liễu', '+15 SMCK vĩnh viễn', 'info'); break;
         case 'archer': add('Mũi tên ma thuật', f(pick(40, 70, 115) + D * 0.5 + ab), 'magic'); break;
         case 'acolyte': add('Hồi máu đồng đội yếu nhất', Math.round(pick(125, 185, 265) + D + ab), 'heal'); add('Sát thương phép', f(pick(80, 120, 180) + ab), 'magic'); break;
@@ -11951,7 +12172,7 @@ function skillPreview(u) {
         case 'kichthanh': add('Hồi máu', pick(550, 850, 1250), 'heal'); add('Cường hóa kích', '+45 SMCK, +40 Giáp/KP, +140% Tốc đánh', 'info'); add('Kháng hiệu ứng', '35% (choáng/làm chậm ngắn hơn)', 'info'); break;
         case 'assassin': add('Ám sát (vật lý)', f(D * pick(2.6, 3.4, 5.0)), 'phys'); add('Lan 70% sang địch gần', f(D * pick(2.6, 3.4, 5.0) * 0.7), 'phys'); break;
         case 'ludwig': add('Mỗi luồng trăng (phép)', f(pick(300, 470, 780) + D * 0.7 + ab), 'magic'); add('…kèm vật lý', f(D * 0.5), 'phys'); add('Tổng 3 luồng nếu trúng cả 3', f((pick(300, 470, 780) + D * 0.7 + ab + D * 0.5) * 3), 'magic'); break;
-        case 'vienchinh': { const b = pick(440, 660, 880) + D * 1.65; add('Viên đạn (mục tiêu bị ngắm)', f(b), 'phys'); add('…địch trên đường đạn (60%)', Math.round(f(b) * 0.6), 'phys'); add('Xuyên giáp tối đa (nội tại)', `${pick(30, 45, 60)}%`, 'info'); break; }
+        case 'vienchinh': { const b = pick(560, 840, 1120) + D * 2.0; add('Viên đạn (mục tiêu bị ngắm)', f(b), 'phys'); add('…địch trên đường đạn (60%)', Math.round(f(b) * 0.6), 'phys'); add('Xuyên giáp tối đa (nội tại)', `${pick(18, 27, 36)}%`, 'info'); break; }
         case 'spirit': add('Giáp ảo cho chủ (% Máu tối đa)', `${pick(50, 70, 100)}%`, 'heal'); add('Tốc đánh cho chủ', `+${pick(20, 30, 40)}%`, 'info'); add('Hồi chiêu sau khi rơi', `${pick(10, 9, 8)}s`, 'info'); break;
         case 'executioner': add('Búa phán xử (vật lý)', f(pick(200, 300, 450) + u.maxHp * 0.06), 'phys'); add('Lan quanh nạn nhân', '50%', 'info'); break;
         case 'artillery': { const n = pick(2, 3, 4), r = f(pick(110, 170, 260) + D * 0.9); add(`Mỗi tên lửa ×${n} (tâm nổ)`, r, 'phys'); add('…vùng ngoài (60%)', Math.round(r * 0.6), 'phys'); add('Tổng tại tâm', r * n, 'phys'); break; }
@@ -12664,7 +12885,8 @@ function renderEncyclopedia() {
 
 function resetNewGame() {
     state.round = 1;
-    state.maxRounds = state.mode === 'endless' ? 999 : 40;
+    state.maxRounds = state.mode === 'endless' ? 999 : 50;
+    state.forgeRounds = pickForgeRounds(state.maxRounds);   // Lò Rèn rơi ở 4 vòng ngẫu nhiên
     state.phase = 'prep';
     state.hp = 100;
     state.lastHudHp = 100;
